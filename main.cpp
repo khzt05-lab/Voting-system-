@@ -1,10 +1,8 @@
-// ============================================================
-//  main.cpp  —  Entry point
-// ============================================================
 #include "VotingSystem.h"
 
 int main() {
-    VotingSystem vs;
-    vs.run();
+    VotingSystem system;
+    system.run();
     return 0;
 }
+

@@ -1,34 +1,15 @@
 @echo off
-title C++ Voting System — Build
-color 0A
+title UIT Student Election System - Build
 
-echo.
-echo  ============================================
-echo   Building Voting System (C++17)...
-echo  ============================================
-echo.
+echo Building with C++17...
+g++ -std=c++17 -Wall -Wextra -I headers main.cpp src/Admin.cpp src/Student.cpp src/FileHandler.cpp src/VotingSystem.cpp -o VotingSystem.exe
 
-g++ -std=c++17 -Wall -Wextra -O2 ^
-    -I headers ^
-    main.cpp ^
-    src/Candidate.cpp ^
-    src/Student.cpp ^
-    src/Admin.cpp ^
-    src/FileHandler.cpp ^
-    src/VotingSystem.cpp ^
-    -o VotingSystem.exe
-
-IF %ERRORLEVEL% EQU 0 (
-    echo.
-    echo  [SUCCESS] Build complete!  ^>  VotingSystem.exe
-    echo.
-    echo  Running...
-    echo  ============================================
-    echo.
+if %errorlevel% equ 0 (
+    echo Build successful.
+    echo Starting VotingSystem.exe...
     VotingSystem.exe
-) ELSE (
-    echo.
-    echo  [FAILED]  Build failed.  Check errors above.
-    echo.
+) else (
+    echo Build failed. Read the compiler messages above.
     pause
 )
+

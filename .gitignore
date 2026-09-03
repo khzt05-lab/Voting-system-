@@ -1,0 +1,7 @@
+*.exe
+*.o
+*.obj
+.vscode/
+build/
+out/
+data/admin_credentials.txt
