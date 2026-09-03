@@ -1,48 +1,39 @@
-// ============================================================
-//  Student.h  —  Student (voter) class declaration
-// ============================================================
 #pragma once
+
 #include <string>
-#include <iostream>
 
 class Student {
 private:
-    std::string studentID;
+    std::string rollNumber;
     std::string name;
-    std::string department;
-    bool        hasVoted;
-    int         votedForID;   // -1 = hasn't voted
+    int batch;
+    int year;
+    std::string classOrMajor;
 
 public:
-    // ── Constructors ──────────────────────────────────────────
     Student();
-    Student(const std::string& id,
-            const std::string& name,
-            const std::string& dept);
+    Student(const std::string& roll, const std::string& studentName,
+            int studentBatch, int studentYear, const std::string& group);
 
-    // ── Getters ───────────────────────────────────────────────
-    std::string getStudentID()   const;
-    std::string getName()        const;
-    std::string getDepartment()  const;
-    bool        getHasVoted()    const;
-    int         getVotedForID()  const;
+    std::string getRollNumber() const;
+    std::string getName() const;
+    int getBatch() const;
+    int getYear() const;
+    std::string getClassOrMajor() const;
 
-    // ── Setters ───────────────────────────────────────────────
-    void setStudentID(const std::string& id);
-    void setName(const std::string& name);
-    void setDepartment(const std::string& dept);
+    void setName(const std::string& studentName);
+    void setClassOrMajor(const std::string& group);
 
-    // ── Actions ───────────────────────────────────────────────
-    void markVoted(int candidateId);
-
-    // ── Display ───────────────────────────────────────────────
-    void display() const;
-
-    // ── Serialization for file I/O ────────────────────────────
-    std::string serialize()                         const;
+    std::string serialize() const;
     static Student deserialize(const std::string& line);
-
-    // ── Operators ─────────────────────────────────────────────
-    bool operator==(const Student& other) const;
-    friend std::ostream& operator<<(std::ostream& os, const Student& s);
 };
+
+std::string normalizeRollNumber(const std::string& input);
+bool validateRollNumber(const std::string& input);
+int extractRollNumber(const std::string& input);
+int determineBatch(int number);
+int determineYear(int batch);
+std::string yearLabel(int year);
+bool isValidGroup(int year, const std::string& group);
+std::string normalizeGroup(int year, const std::string& group);
+

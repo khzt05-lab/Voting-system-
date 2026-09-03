@@ -1,33 +1,49 @@
-// ============================================================
-//  FileHandler.h  —  File save / load for persistent data
-// ============================================================
 #pragma once
-#include <vector>
+
 #include <string>
-#include "Candidate.h"
+#include <vector>
 #include "Student.h"
+
+struct VoteRecord {
+    std::string studentRoll;
+    std::string electionType;
+    int batch;
+    std::string group;
+    std::string candidateRoll;
+};
+
+struct ElectionResult {
+    int batch;
+    std::string group;
+    std::string winnerRoll;
+    std::string winnerName;
+    int votes;
+};
+
+enum class ElectionPhase {
+    NOT_STARTED = 0,
+    CLASS_EC_RUNNING = 1,
+    CLASS_EC_COMPLETED = 2,
+    BATCH_REP_RUNNING = 3,
+    BATCH_REP_COMPLETED = 4
+};
 
 class FileHandler {
 public:
-    // ── File paths ────────────────────────────────────────────
-    static const std::string CANDIDATES_FILE;  // "data/candidates.dat"
-    static const std::string STUDENTS_FILE;    // "data/students.dat"
-    static const std::string RESULTS_FILE;     // "data/results.txt"
+    static const std::string STUDENTS_FILE;
+    static const std::string VOTES_FILE;
+    static const std::string CLASS_RESULTS_FILE;
+    static const std::string BATCH_RESULTS_FILE;
+    static const std::string STATUS_FILE;
 
-    // ── Candidate persistence ─────────────────────────────────
-    static bool saveCandidates(const std::vector<Candidate>& candidates);
-    static bool loadCandidates(std::vector<Candidate>& candidates);
-
-    // ── Student persistence ───────────────────────────────────
-    static bool saveStudents(const std::vector<Student>& students);
+    static void ensureDataDir();
     static bool loadStudents(std::vector<Student>& students);
-
-    // ── Human-readable results export ─────────────────────────
-    static bool exportResults(const std::vector<Candidate>& candidates,
-                              const std::string& winnerName,
-                              int totalVotes);
-
-    // ── Utility ───────────────────────────────────────────────
-    static bool fileExists(const std::string& filename);
-    static void ensureDataDir();   // Creates "data/" directory if absent
+    static bool saveStudents(const std::vector<Student>& students);
+    static bool loadVotes(std::vector<VoteRecord>& votes);
+    static bool appendVote(const VoteRecord& vote);
+    static bool loadResults(const std::string& filename, std::vector<ElectionResult>& results);
+    static bool saveResults(const std::string& filename, const std::vector<ElectionResult>& results);
+    static bool loadPhases(std::vector<ElectionPhase>& phases);
+    static bool savePhases(const std::vector<ElectionPhase>& phases);
 };
+
