@@ -1,0 +1,1 @@
+# One vote per line: election|voter-roll|candidate-roll

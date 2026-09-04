@@ -1,123 +1,84 @@
-// ============================================================
-//  FileHandler.cpp  —  Persistent file save / load
-// ============================================================
 #include "FileHandler.h"
-#include <fstream>
-#include <iostream>
+
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 
-// ── Static File Path Constants ────────────────────────────────
-const std::string FileHandler::CANDIDATES_FILE = "data/candidates.dat";
-const std::string FileHandler::STUDENTS_FILE   = "data/students.dat";
-const std::string FileHandler::RESULTS_FILE    = "data/results.txt";
+const std::string FileHandler::STUDENTS_FILE = "data/students.txt";
+const std::string FileHandler::VOTES_FILE = "data/votes.txt";
+const std::string FileHandler::CLASS_RESULTS_FILE = "data/class_ec_results.txt";
+const std::string FileHandler::BATCH_RESULTS_FILE = "data/batch_rep_results.txt";
+const std::string FileHandler::STATUS_FILE = "data/election_status.txt";
 
-// ── Utility ───────────────────────────────────────────────────
-bool FileHandler::fileExists(const std::string& filename) {
-    return std::filesystem::exists(filename);
-}
-
-void FileHandler::ensureDataDir() {
-    std::filesystem::create_directories("data");
-}
-
-// ── Candidate Persistence ─────────────────────────────────────
-bool FileHandler::saveCandidates(const std::vector<Candidate>& candidates) {
-    ensureDataDir();
-    std::ofstream file(CANDIDATES_FILE, std::ios::trunc);
-    if (!file.is_open()) return false;
-
-    for (const auto& c : candidates)
-        file << c.serialize() << "\n";
-
-    file.close();
-    return true;
-}
-
-bool FileHandler::loadCandidates(std::vector<Candidate>& candidates) {
-    candidates.clear();
-    if (!fileExists(CANDIDATES_FILE)) return false;
-
-    std::ifstream file(CANDIDATES_FILE);
-    if (!file.is_open()) return false;
-
-    std::string line;
-    while (std::getline(file, line)) {
-        if (!line.empty())
-            candidates.push_back(Candidate::deserialize(line));
-    }
-    file.close();
-    return true;
-}
-
-// ── Student Persistence ───────────────────────────────────────
-bool FileHandler::saveStudents(const std::vector<Student>& students) {
-    ensureDataDir();
-    std::ofstream file(STUDENTS_FILE, std::ios::trunc);
-    if (!file.is_open()) return false;
-
-    for (const auto& s : students)
-        file << s.serialize() << "\n";
-
-    file.close();
-    return true;
-}
+void FileHandler::ensureDataDir() { std::filesystem::create_directories("data"); }
 
 bool FileHandler::loadStudents(std::vector<Student>& students) {
     students.clear();
-    if (!fileExists(STUDENTS_FILE)) return false;
-
     std::ifstream file(STUDENTS_FILE);
-    if (!file.is_open()) return false;
-
+    if (!file) return false;
     std::string line;
     while (std::getline(file, line)) {
-        if (!line.empty())
-            students.push_back(Student::deserialize(line));
+        Student student = Student::deserialize(line);
+        if (Student::isValidRoll(student.getRollNumber()) &&
+            Student::isValidGroupForYear(student.getGroup(), student.getYear()))
+            students.push_back(student);
     }
-    file.close();
     return true;
 }
 
-// ── Human-Readable Results Export ────────────────────────────
-bool FileHandler::exportResults(const std::vector<Candidate>& candidates,
-                                const std::string& winnerName,
-                                int totalVotes) {
-    ensureDataDir();
-    std::ofstream file(RESULTS_FILE, std::ios::trunc);
-    if (!file.is_open()) return false;
+bool FileHandler::saveStudents(const std::vector<Student>& students) {
+    std::vector<std::string> lines;
+    for (const auto& student : students) lines.push_back(student.serialize());
+    return writeLines(STUDENTS_FILE, lines);
+}
 
-    file << "======================================================\n";
-    file << "              VOTING SYSTEM — RESULTS\n";
-    file << "======================================================\n\n";
-    file << "WINNER: " << winnerName << "\n\n";
-    file << "------------------------------------------------------\n";
-    file << "  RANK  NAME                    PARTY           VOTES\n";
-    file << "------------------------------------------------------\n";
-
-    // Copy & sort by votes descending
-    std::vector<Candidate> sorted = candidates;
-    for (size_t i = 0; i < sorted.size(); ++i)
-        for (size_t j = i + 1; j < sorted.size(); ++j)
-            if (sorted[j] > sorted[i]) std::swap(sorted[i], sorted[j]);
-
-    int rank = 1;
-    for (const auto& c : sorted) {
-        double pct = (totalVotes > 0)
-            ? (100.0 * c.getVoteCount() / totalVotes) : 0.0;
-
-        char buf[128];
-        snprintf(buf, sizeof(buf), "  #%-4d %-22s %-15s %5d  (%.1f%%)\n",
-                 rank++,
-                 c.getName().c_str(),
-                 c.getParty().c_str(),
-                 c.getVoteCount(),
-                 pct);
-        file << buf;
+bool FileHandler::loadVotes(std::vector<VoteRecord>& votes) {
+    votes.clear();
+    std::ifstream file(VOTES_FILE);
+    if (!file) return false;
+    std::string line;
+    while (std::getline(file, line)) {
+        std::stringstream input(line);
+        VoteRecord vote;
+        if (std::getline(input, vote.election, '|') &&
+            std::getline(input, vote.voterRoll, '|') &&
+            std::getline(input, vote.candidateRoll) &&
+            (vote.election == "CLASS_EC" || vote.election == "BATCH_REP"))
+            votes.push_back(vote);
     }
-
-    file << "------------------------------------------------------\n";
-    file << "Total votes cast: " << totalVotes << "\n";
-    file << "======================================================\n";
-    file.close();
     return true;
+}
+
+bool FileHandler::saveVotes(const std::vector<VoteRecord>& votes) {
+    std::vector<std::string> lines;
+    for (const auto& vote : votes)
+        lines.push_back(vote.election + "|" + vote.voterRoll + "|" + vote.candidateRoll);
+    return writeLines(VOTES_FILE, lines);
+}
+
+ElectionStatus FileHandler::loadStatus() {
+    ElectionStatus status;
+    std::ifstream file(STATUS_FILE);
+    std::string key, value;
+    while (file >> key >> value) {
+        if (key == "CLASS_EC") status.classElectionOpen = value == "OPEN";
+        if (key == "BATCH_REP") status.batchElectionOpen = value == "OPEN";
+    }
+    return status;
+}
+
+bool FileHandler::saveStatus(const ElectionStatus& status) {
+    return writeLines(STATUS_FILE, {
+        std::string("CLASS_EC ") + (status.classElectionOpen ? "OPEN" : "CLOSED"),
+        std::string("BATCH_REP ") + (status.batchElectionOpen ? "OPEN" : "CLOSED")
+    });
+}
+
+bool FileHandler::writeLines(const std::string& path,
+                             const std::vector<std::string>& lines) {
+    ensureDataDir();
+    std::ofstream file(path, std::ios::trunc);
+    if (!file) return false;
+    for (const auto& line : lines) file << line << '\n';
+    return static_cast<bool>(file);
 }

@@ -1,48 +1,35 @@
-// ============================================================
-//  Student.h  —  Student (voter) class declaration
-// ============================================================
 #pragma once
-#include <string>
-#include <iostream>
 
+#include <string>
+
+// A registered UIT voter.  Batch and year are derived from the roll number;
+// only the class/major is stored in the registry.
 class Student {
 private:
-    std::string studentID;
+    std::string rollNumber;
     std::string name;
-    std::string department;
-    bool        hasVoted;
-    int         votedForID;   // -1 = hasn't voted
+    std::string group;
 
 public:
-    // ── Constructors ──────────────────────────────────────────
     Student();
-    Student(const std::string& id,
-            const std::string& name,
-            const std::string& dept);
+    Student(const std::string& roll, const std::string& name,
+            const std::string& classOrMajor);
 
-    // ── Getters ───────────────────────────────────────────────
-    std::string getStudentID()   const;
-    std::string getName()        const;
-    std::string getDepartment()  const;
-    bool        getHasVoted()    const;
-    int         getVotedForID()  const;
+    const std::string& getRollNumber() const;
+    const std::string& getStudentID() const; // compatibility with the old UI
+    const std::string& getName() const;
+    const std::string& getGroup() const;
+    std::string getDepartment() const;       // compatibility with old data
+    int getBatch() const;
+    int getYear() const;
+    std::string getYearLabel() const;
 
-    // ── Setters ───────────────────────────────────────────────
-    void setStudentID(const std::string& id);
-    void setName(const std::string& name);
-    void setDepartment(const std::string& dept);
+    static std::string normalizeRoll(const std::string& roll);
+    static bool isValidRoll(const std::string& roll);
+    static int batchFromRoll(const std::string& roll);
+    static int yearFromRoll(const std::string& roll);
+    static bool isValidGroupForYear(const std::string& group, int year);
 
-    // ── Actions ───────────────────────────────────────────────
-    void markVoted(int candidateId);
-
-    // ── Display ───────────────────────────────────────────────
-    void display() const;
-
-    // ── Serialization for file I/O ────────────────────────────
-    std::string serialize()                         const;
+    std::string serialize() const;
     static Student deserialize(const std::string& line);
-
-    // ── Operators ─────────────────────────────────────────────
-    bool operator==(const Student& other) const;
-    friend std::ostream& operator<<(std::ostream& os, const Student& s);
 };

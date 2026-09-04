@@ -1,82 +1,91 @@
-// ============================================================
-//  Student.cpp  —  Student class implementation
-// ============================================================
 #include "Student.h"
-#include "colors.h"
+
+#include <algorithm>
+#include <cctype>
 #include <sstream>
 #include <vector>
-#include <iostream>
 
-// ── Constructors ──────────────────────────────────────────────
-Student::Student()
-    : studentID(""), name(""), department(""), hasVoted(false), votedForID(-1) {}
-
-Student::Student(const std::string& id, const std::string& name, const std::string& dept)
-    : studentID(id), name(name), department(dept), hasVoted(false), votedForID(-1) {}
-
-// ── Getters ───────────────────────────────────────────────────
-std::string Student::getStudentID()   const { return studentID; }
-std::string Student::getName()        const { return name; }
-std::string Student::getDepartment()  const { return department; }
-bool        Student::getHasVoted()    const { return hasVoted; }
-int         Student::getVotedForID()  const { return votedForID; }
-
-// ── Setters ───────────────────────────────────────────────────
-void Student::setStudentID(const std::string& id)   { studentID = id; }
-void Student::setName(const std::string& n)          { name = n; }
-void Student::setDepartment(const std::string& dept) { department = dept; }
-
-// ── Actions ───────────────────────────────────────────────────
-void Student::markVoted(int candidateId) {
-    hasVoted   = true;
-    votedForID = candidateId;
+namespace {
+const std::vector<std::string> MAJORS = {
+    "Software Engineering", "Business Information Systems",
+    "Knowledge Engineering", "High Performance Computing",
+    "Embedded Systems", "Cyber Security", "Communication and Networking"
+};
 }
 
-// ── Display (detail view) ─────────────────────────────────────
-void Student::display() const {
-    std::string votedStatus = hasVoted
-        ? std::string(C_BR_GREEN "Yes (Candidate #") + std::to_string(votedForID) + ")" C_RESET
-        : std::string(C_BR_RED   "No" C_RESET);
+Student::Student() = default;
 
-    std::cout << C_BR_YELLOW "  Student ID    : " C_RESET << studentID  << "\n"
-              << C_BR_CYAN   "  Name          : " C_RESET << name       << "\n"
-              << C_MAGENTA   "  Department    : " C_RESET << department << "\n"
-              << C_BR_WHITE  "  Has Voted     : " C_RESET << votedStatus << "\n";
+Student::Student(const std::string& roll, const std::string& studentName,
+                 const std::string& classOrMajor)
+    : rollNumber(normalizeRoll(roll)), name(studentName), group(classOrMajor) {}
+
+const std::string& Student::getRollNumber() const { return rollNumber; }
+const std::string& Student::getStudentID() const { return rollNumber; }
+const std::string& Student::getName() const { return name; }
+const std::string& Student::getGroup() const { return group; }
+std::string Student::getDepartment() const { return group; }
+
+std::string Student::normalizeRoll(const std::string& value) {
+    std::string compact;
+    for (unsigned char ch : value) {
+        if (!std::isspace(ch)) compact += static_cast<char>(std::toupper(ch));
+    }
+    if (compact.size() == 8 && compact.substr(0, 3) == "TNT" &&
+        compact[3] == '-') {
+        return compact.substr(0, 3) + " - " + compact.substr(4);
+    }
+    return compact;
 }
 
-// ── Serialization ─────────────────────────────────────────────
-// Format:  studentID|name|department|hasVoted|votedForID
+bool Student::isValidRoll(const std::string& value) {
+    const std::string roll = normalizeRoll(value);
+    if (roll.size() != 10 || roll.substr(0, 6) != "TNT - ") return false;
+    for (std::size_t i = 6; i < 10 && i < roll.size(); ++i)
+        if (!std::isdigit(static_cast<unsigned char>(roll[i]))) return false;
+    const int number = std::stoi(roll.substr(6));
+    return number >= 1600 && number <= 2600;
+}
+
+int Student::batchFromRoll(const std::string& value) {
+    if (!isValidRoll(value)) return 0;
+    const int n = std::stoi(normalizeRoll(value).substr(6));
+    if (n <= 1799) return 9;
+    if (n <= 1999) return 10;
+    if (n <= 2199) return 11;
+    if (n <= 2399) return 12;
+    return 13;
+}
+
+int Student::yearFromRoll(const std::string& value) {
+    const int batch = batchFromRoll(value);
+    return batch == 0 ? 0 : 14 - batch;
+}
+
+int Student::getBatch() const { return batchFromRoll(rollNumber); }
+int Student::getYear() const { return yearFromRoll(rollNumber); }
+std::string Student::getYearLabel() const {
+    static const char* labels[] = {"", "1st Year", "2nd Year", "3rd Year",
+                                    "4th Year", "5th Year"};
+    return getYear() >= 1 && getYear() <= 5 ? labels[getYear()] : "Unknown";
+}
+
+bool Student::isValidGroupForYear(const std::string& value, int year) {
+    if (year >= 1 && year <= 3)
+        return value.size() == 1 && value[0] >= 'A' && value[0] <= 'E';
+    if (year == 4 || year == 5)
+        return std::find(MAJORS.begin(), MAJORS.end(), value) != MAJORS.end();
+    return false;
+}
+
 std::string Student::serialize() const {
-    return studentID + "|"
-         + name + "|"
-         + department + "|"
-         + (hasVoted ? "1" : "0") + "|"
-         + std::to_string(votedForID);
+    return rollNumber + "|" + name + "|" + group;
 }
 
 Student Student::deserialize(const std::string& line) {
-    std::stringstream ss(line);
-    std::string token;
-    std::vector<std::string> tokens;
-    while (std::getline(ss, token, '|')) tokens.push_back(token);
-
-    Student s;
-    if (tokens.size() >= 5) {
-        s.studentID  = tokens[0];
-        s.name       = tokens[1];
-        s.department = tokens[2];
-        s.hasVoted   = (tokens[3] == "1");
-        s.votedForID = std::stoi(tokens[4]);
-    }
-    return s;
-}
-
-// ── Operators ─────────────────────────────────────────────────
-bool Student::operator==(const Student& o) const { return studentID == o.studentID; }
-
-std::ostream& operator<<(std::ostream& os, const Student& s) {
-    os << "Student [" << s.studentID << "]: " << s.name
-       << " | " << s.department
-       << " | Voted: " << (s.hasVoted ? "Yes" : "No");
-    return os;
+    std::stringstream input(line);
+    std::vector<std::string> fields;
+    std::string field;
+    while (std::getline(input, field, '|')) fields.push_back(field);
+    if (fields.size() < 3) return {};
+    return Student(fields[0], fields[1], fields[2]);
 }

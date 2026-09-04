@@ -1,54 +1,41 @@
-// ============================================================
-//  VotingSystem.h  —  Core controller (ties all modules)
-// ============================================================
 #pragma once
-#include <vector>
-#include <string>
-#include "Candidate.h"
-#include "Student.h"
+
 #include "Admin.h"
 #include "FileHandler.h"
+#include <map>
+#include <string>
+#include <vector>
 
 class VotingSystem {
 private:
-    // ── State ─────────────────────────────────────────────────
-    std::vector<Candidate> candidates;
-    std::vector<Student>   students;
-    Admin                  admin;
-    bool                   isRunning;
-    int                    nextCandidateId;
+    std::vector<Student> students;
+    std::vector<VoteRecord> votes;
+    ElectionStatus status;
+    Admin admin;
+    bool isRunning;
 
-    // ── Navigation / Sections ─────────────────────────────────
     void showMainMenu();
-
-    // Admin
     void adminLogin();
     void adminPanel();
-    void candidateManagement();
-    void addCandidate();
-    void editCandidate();
-    void removeCandidate();
-    void listCandidates();
-    void resetAllVotes();
+    void registerStudent();
+    void listStudents() const;
+    void studentLogin();
+    void studentPanel(Student& student);
+    void classVote(Student& voter);
+    void batchVote(Student& voter);
+    void showResults() const;
+    void calculateClassResults();
+    void calculateBatchResults();
+    void resetElection();
 
-    // Students & Voting
-    void studentRegistration();
-    void votingBooth();
-
-    // Results
-    void showResults();
-    void calculateWinner();
-
-    // ── Internal Helpers ──────────────────────────────────────
-    Candidate* findCandidateById(int id);
-    Student*   findStudentById(const std::string& id);
-    bool       candidateExists(int id)                const;
-    bool       studentExists(const std::string& id)   const;
-    int        getTotalVotes()                         const;
-
-    // Persistence
-    void loadData();
-    void saveData();
+    Student* findStudent(const std::string& roll);
+    const Student* findStudent(const std::string& roll) const;
+    bool hasVoted(const std::string& election, const std::string& roll) const;
+    std::vector<const Student*> classCandidates(const Student& voter) const;
+    std::vector<const Student*> batchCandidates(int batch) const;
+    std::map<std::string, int> tally(const std::string& election) const;
+    std::vector<std::string> classWinnerLines() const;
+    void saveData() const;
 
 public:
     VotingSystem();

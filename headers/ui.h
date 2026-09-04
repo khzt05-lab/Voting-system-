@@ -8,7 +8,9 @@
 #include <iomanip>
 #include <sstream>
 #include <cctype>
+#ifdef _WIN32
 #include <conio.h>
+#endif
 #include "colors.h"
 
 // ── Box Drawing Characters (UTF-8 encoded) ───────────────────
@@ -77,7 +79,12 @@ inline void clearScreen() {
 
 inline void pause() {
     std::cout << "\n" C_DIM "  Press any key to continue..." C_RESET;
+#ifdef _WIN32
     _getch();
+#else
+    std::string ignored;
+    std::getline(std::cin, ignored);
+#endif
     std::cout << "\n";
 }
 
@@ -176,6 +183,7 @@ inline void drawMenu(const std::vector<std::string>& opts, int w = W) {
 inline std::string getMaskedInput(const std::string& prompt) {
     std::cout << C_BR_CYAN "  -> " C_RESET << prompt;
     std::string pwd;
+#ifdef _WIN32
     int ch;
     while (true) {
         ch = _getch();
@@ -187,6 +195,10 @@ inline std::string getMaskedInput(const std::string& prompt) {
             std::cout << '*';
         }
     }
+#else
+    // MinGW uses _getch(); the fallback keeps development builds portable.
+    std::getline(std::cin, pwd);
+#endif
     std::cout << "\n";
     return pwd;
 }

@@ -3,10 +3,13 @@
 // ============================================================
 #pragma once
 #include <string>
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 // ── Enable ANSI escape sequences on Windows 10+ ──────────────
 inline void enableANSI() {
+#ifdef _WIN32
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD dwMode = 0;
     if (GetConsoleMode(hOut, &dwMode)) {
@@ -15,6 +18,7 @@ inline void enableANSI() {
     }
     SetConsoleOutputCP(65001);   // UTF-8 output
     SetConsoleCP(65001);          // UTF-8 input
+#endif
 }
 
 // ── Reset & Text Effects ─────────────────────────────────────
